@@ -1,5 +1,5 @@
-# CHORT
-Coronal Hole Observer and Regional Tracker
+# CHORTLE
+Coronal Hole Observer and Regional Tracker for Long-term Examination
 
 ## Overiew
 Manifesting as regions of decreased emission in extreme ultraviolet (EUV) and x-ray wavelengths, coronal holes are the observational signatures of open solar magnetic field. Coronal plasma within these regions is free to flow outward along open magnetic field lines, resulting in reduced density and emission. Studying these coronal hole regions provides useful insights into their connection with open magnetic field and the evolution of the solar cycle.
