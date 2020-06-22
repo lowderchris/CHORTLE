@@ -14,5 +14,9 @@ A previous incarnation of this code, GACHD ([Lowder et al 2014](http://adsabs.ha
 
 ## Installation
 
+Currently I've uploaded this code as a VERY ROUGH DRAFT of porting the basic methodology of the original code over from IDL to Python. It exists as a script, with all kinds of terrible work-in-progress qualities. Use at your own peril. Notably some... *improvements* to the SunPy library of code have broken critical aspects of the reprojection portion of this code, which needs to be corrected.
+
+TL;DL - Don't use this code quite yet, but watch this space as I continue to develop it towards a more user-friendly and accurate version.
+
 ## Notes
 
