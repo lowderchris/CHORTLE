@@ -85,6 +85,13 @@ def chortle(cr):
         # Check for bad files
         if map_eit.exposure_time == 0: continue
 
+        # Remove any missing data
+        # This is a weird workaround since I can't add nans to int16 arrs
+        temp_header = map_eit.meta
+        map_eit = sunpy.map.Map((map_eit.data.astype(np.float), temp_header))
+        map_eit.data[where(map_eit.data == 0)] = np.nan
+        arr[where(arr == 0)] = np.nan
+        
         # Construct an output header
         header = sunpy.map.make_fitswcs_header(np.empty(oshape),
                        SkyCoord(0, 0, unit=u.deg,
@@ -105,7 +112,7 @@ def chortle(cr):
 
         # Normalize data to exposure time
         omap_eit_data = (omap_eit.data / (map_eit.exposure_time / u.second)).value
-        
+
         # Condense the reprojected map minimums into chmap
         chmap = numpy.fmin(chmap, omap_eit_data)
 
@@ -134,10 +141,7 @@ def chortle(cr):
             plon1 = int((ilon+1)*dlon*pscale[1])
             sarr = chmap_eit[plat0:plat1, plon0:plon1]
 
-            if np.nanmin(sarr) < qs:
-                sarr_hist = histogram(sarr[where(np.isfinite(sarr))].flatten(), bins=100, range=[np.nanmin(sarr),qs])
-            else:
-                sarr_hist = histogram(sarr[where(np.isfinite(sarr))].flatten(), bins=100, range=[qs, np.nanmin(sarr)])
+            sarr_hist = histogram(sarr[where(np.isfinite(sarr))].flatten(), bins=100, range=[np.nanmin(sarr),np.nanmax(sarr)])
             #sarr_dist = scipy.stats.rv_histogram(sarr_hist)
             sh_x = sarr_hist[1][0:-1]
             sh_y = sarr_hist[0]
@@ -193,8 +197,8 @@ def chortle(cr):
     chim = im_eit
 
     # Save everything out to file
-    fname = outdir+'chmap/chmap-'+str(cr)+'.fits'
-    sunpy.io.write_file(fname, chmap*chim, header)
+    fname = outdir+'chmap/chmap-'+str(cr)+'-eit.fits'
+    sunpy.io.write_file(fname, chmap*chim, header, overwrite=True)
 
     # Some plotting
     f, (ax) = subplots(1, figsize=[6,3])
@@ -204,5 +208,5 @@ def chortle(cr):
     ax.set_ylabel('Latitude (degrees)')
     ax.set_title('CH - EIT - CR '+str(cr))
     tight_layout()
-    savefig(outdir+'chmap/plt-chmap-'+str(cr)+'.pdf')
-    savefig(outdir+'chmap/plt-chmap-'+str(cr)+'.png', dpi=150)
+    savefig(outdir+'chmap/plt-chmap-'+str(cr)+'-eit.pdf')
+    savefig(outdir+'chmap/plt-chmap-'+str(cr)+'-eit.png', dpi=150)
