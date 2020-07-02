@@ -43,7 +43,7 @@ def chortle(cr):
 
     # Specify timing parameters
     #cr = 2193
-    nsday = 1
+    nshour = 6
 
     # Grab the start and end dates for this rotation
     t0 = sunpy.coordinates.sun.carrington_rotation_time(cr)
@@ -62,7 +62,7 @@ def chortle(cr):
     t1 = datetime.datetime(t1.year, t1.month, t1.day)
 
     # Download appropriate data
-    search_eit = (a.Instrument('EIT') & a.vso.Sample(nsday*u.day) & a.Time(t0,t1))
+    search_eit = (a.Instrument('EIT') & a.vso.Sample(nshour*u.hour) & a.Time(t0,t1))
     res_eit = Fido.search(a.Wavelength(19.5 * u.nm), search_eit)
 
     files_eit = Fido.fetch(res_eit, path=datdir+'eit/')
@@ -90,7 +90,6 @@ def chortle(cr):
         temp_header = map_eit.meta
         map_eit = sunpy.map.Map((map_eit.data.astype(np.float), temp_header))
         map_eit.data[where(map_eit.data == 0)] = np.nan
-        arr[where(arr == 0)] = np.nan
         
         # Construct an output header
         header = sunpy.map.make_fitswcs_header(np.empty(oshape),
