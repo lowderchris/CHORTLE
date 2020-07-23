@@ -307,5 +307,5 @@ def chortle(cr):
     ax.set_ylabel('Latitude (degrees)')
     ax.set_title('CH - AIA/STA - CR '+str(cr))
     tight_layout()
-    savefig(outdir+'chmap/plt-chmap-'+str(cr)+'.pdf')
-    savefig(outdir+'chmap/plt-chmap-'+str(cr)+'.png', dpi=150)
+    savefig(outdir+'plt/plt-chmap-'+str(cr)+'.pdf')
+    savefig(outdir+'plt/plt-chmap-'+str(cr)+'.png', dpi=150)
