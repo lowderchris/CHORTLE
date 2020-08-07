@@ -196,7 +196,8 @@ def chortle(cr):
             plon1 = int((ilon+1)*dlon*pscale[1])
             sarr = chmap_aia[plat0:plat1, plon0:plon1]
 
-            sarr_hist = histogram(sarr[where(np.isfinite(sarr))].flatten(), bins=100, range=[np.nanmin(sarr),qs])
+            #sarr_hist = histogram(sarr[where(np.isfinite(sarr))].flatten(), bins=100, range=[np.nanmin(sarr),qs])
+            sarr_hist = histogram(sarr[where(np.isfinite(sarr))].flatten(), bins=100, range=[0,qs])
             #sarr_dist = scipy.stats.rv_histogram(sarr_hist)
             sh_x = sarr_hist[1][0:-1]
             sh_y = sarr_hist[0]
@@ -230,7 +231,8 @@ def chortle(cr):
             plon1 = int((ilon+1)*dlon*pscale[1])
             sarr = chmap_sta[plat0:plat1, plon0:plon1]
 
-            sarr_hist = histogram(sarr[where(np.isfinite(sarr))].flatten(), bins=100, range=[np.nanmin(sarr),qs])
+            #sarr_hist = histogram(sarr[where(np.isfinite(sarr))].flatten(), bins=100, range=[np.nanmin(sarr),qs])
+            sarr_hist = histogram(sarr[where(np.isfinite(sarr))].flatten(), bins=100, range=[0,qs])
             #sarr_dist = scipy.stats.rv_histogram(sarr_hist)
             sh_x = sarr_hist[1][0:-1]
             sh_y = sarr_hist[0]
