@@ -61,11 +61,14 @@ def chortle(cr):
     t1 = datetime.datetime(t1.year, t1.month, t1.day)
 
     # Download appropriate data
-    search_aia = (a.Instrument('AIA') & a.vso.Sample(nsday*u.day) & a.Time(t0,t1))
+    search_aia = (a.Instrument('AIA') & a.Sample(nsday*u.day) & a.Time(t0,t1))
     res_aia = Fido.search(a.Wavelength(19.3 * u.nm), search_aia)
 
-    search_sta = (a.Instrument('SECCHI') & a.Detector('EUVI') & a.vso.Sample(nsday*u.day) & a.Time(t0,t1))
+    search_sta = (a.vso.Source('STEREO_A') & a.Instrument('SECCHI') & a.Detector('EUVI') & a.Sample(nsday*u.day) & a.Time(t0,t1))
     res_sta = Fido.search(a.Wavelength(19.5 * u.nm), search_sta)
+
+    search_stb = (a.vso.Source('STEREO_B') & a.Instrument('SECCHI') & a.Detector('EUVI') & a.Sample(nsday*u.day) & a.Time(t0,t1))
+    res_stb = Fido.search(a.Wavelength(19.5 * u.nm), search_stb)
 
     # Running into some errors with automatically fetching HMI data
     # Manually download and load for now...
@@ -78,6 +81,9 @@ def chortle(cr):
 
     files_sta = Fido.fetch(res_sta, path=datdir+'sta/')
     files_sta.sort() 
+
+    files_stb = Fido.fetch(res_stb, path=datdir+'stb/')
+    files_stb.sort() 
 
     ## Grab a synoptic magnetogram
     br = sunpy.io.fits.read('/Users/clowder/data/hmi.Synoptic_Mr.polfil/hmi.synoptic_mr_polfil_720s.'+str(cr)+'.Mr_polfil.fits')[1].data
@@ -164,6 +170,48 @@ def chortle(cr):
 
     chmap_sta = np.copy(chmap)
 
+    ## Generate some blank storage arrays
+    oshape = [720,1440]
+    chmap = np.zeros(oshape,dtype=np.double)
+    chmap[:,:] = np.nan
+
+    ## Iterate through this data, reprojecting as you go
+    for file in files_stb:
+
+        # Read in data
+        map_stb = sunpy.map.Map(file)
+
+        # Check for bad files
+        if map_stb.exposure_time == 0: continue
+
+        # Construct an output header
+        header = sunpy.map.make_fitswcs_header(np.empty(oshape),
+                       SkyCoord(0, 0, unit=u.deg,
+                                frame="heliographic_carrington",
+                                #frame="heliographic_stonyhurst",
+                                obstime=map_stb.date),
+                       #reference_pixel=[0,(oshape[0] - 1)/2.]*u.pix,
+                       scale=[180 / oshape[0],
+                              360 / oshape[1]] * u.deg / u.pix,
+                       projection_code="CAR")
+
+        #header['crval2'] = 0
+        out_wcs = WCS(header)
+
+        # Reproject
+        array, footprint = reproject_interp(
+            (map_stb.data, map_stb.wcs), out_wcs, shape_out=oshape)
+        omap_stb = sunpy.map.Map((array, header))
+        omap_stb.plot_settings = map_stb.plot_settings
+
+        # Normalize data to exposure time
+        omap_stb_data = (omap_stb.data / (map_stb.exposure_time / u.second)).value
+        
+        # Condense the reprojected map minimums into chmap
+        chmap = numpy.fmin(chmap, omap_stb_data)
+
+    chmap_stb = np.copy(chmap)
+
     # CL - Make sure to align output maps with longitude coordinates, notably shift the zero point from the center to the edge of the data frame
     #coords = sunpy.map.all_coordinates_from_map(omap_aia)
 
@@ -179,6 +227,10 @@ def chortle(cr):
     chmap_sta[:,0] = (chmap_sta[:,-1]+chmap_sta[:,1])/2
     chmap_sta[0,:] = np.nan
     chmap_sta = np.roll(chmap_sta, [0,int(oshape[1]/2)])
+
+    chmap_stb[:,0] = (chmap_stb[:,-1]+chmap_stb[:,1])/2
+    chmap_stb[0,:] = np.nan
+    chmap_stb = np.roll(chmap_stb, [0,int(oshape[1]/2)])
 
     lats = np.linspace(-90,90,oshape[0])
     lons = np.linspace(0,360,oshape[1])
@@ -254,16 +306,54 @@ def chortle(cr):
 
     chval_sta = np.nanmean(thrsh)
 
+    # Generate threshold values for STB
+    qs = np.median(chmap_stb[np.isfinite(chmap_stb)])
+    thrsh = np.array([])
+    [dlat, dlon] = [60,60]
+    for ilat in np.arange(0,180/dlat):
+        for ilon in np.arange(0,360/dlon):
+            plat0 = int(ilat*dlat*pscale[0])
+            plat1 = int((ilat+1)*dlat*pscale[0])
+            plon0 = int(ilon*dlon*pscale[1])
+            plon1 = int((ilon+1)*dlon*pscale[1])
+            sarr = chmap_stb[plat0:plat1, plon0:plon1]
+
+            #sarr_hist = histogram(sarr[where(np.isfinite(sarr))].flatten(), bins=100, range=[np.nanmin(sarr),qs])
+            sarr_hist = histogram(sarr[where(np.isfinite(sarr))].flatten(), bins=100, range=[0,qs])
+            #sarr_dist = scipy.stats.rv_histogram(sarr_hist)
+            sh_x = sarr_hist[1][0:-1]
+            sh_y = sarr_hist[0]
+            sh_y2 = scipy.signal.convolve(sh_y, scipy.signal.hann(20), mode='same')/sum(scipy.signal.hann(20))
+            pks = scipy.signal.find_peaks_cwt(sh_y2,np.arange(1,20))
+            if len(pks) >= 2:
+                sh_x2 = sh_x[pks[0]:pks[-1]-1]
+                sh_y3 = sh_y2[pks[0]:pks[-1]-1]
+            else:
+                minval = int(len(sh_x)/4)
+                maxval = int(len(sh_x)*0.9)
+                sh_x2 = sh_x[minval:maxval]
+                sh_y3 = sh_y2[minval:maxval]
+            pks2 = scipy.signal.find_peaks_cwt(-1*sh_y3,np.arange(1,20))
+            if len(pks2) != 0:
+                thrsh = np.append(thrsh, sh_x2[pks2[0]])
+            else:
+                thrsh = np.append(thrsh, np.nan)
+
+    chval_stb = np.nanmean(thrsh)
+
     chmap0_aia = np.copy(chmap_aia)
     chmap0_aia[where(chmap_aia>chval_aia)] = 0
 
     chmap0_sta = np.copy(chmap_sta)
     chmap0_sta[where(chmap_sta>chval_sta)] = 0
 
+    chmap0_stb = np.copy(chmap_stb)
+    chmap0_stb[where(chmap_stb>chval_stb)] = 0
+
     # Generate a merged chmap
     # CL - make changes here to restore to original behavior of measuring CH depth. Might need to create a normalized merged of AIA / STA data to fill the gaps
     nodat = (np.logical_and(~np.isfinite(chmap0_aia),~np.isfinite(chmap0_sta)))
-    chmap0 = (np.nansum(np.dstack((chmap0_aia, chmap0_sta)),2) != 0)
+    chmap0 = (np.nansum(np.dstack((chmap0_aia, chmap0_sta, chmap0_stb)),2) != 0)
     # chmap0 = chmap_aia * (np.nansum(np.dstack((chmap0_aia, chmap0_sta)),2) != 0)
 
     ocstruct = np.ones([3,3])
@@ -284,10 +374,10 @@ def chortle(cr):
 
     chmap = chmap1
 
-
     # For visualization, scale the images to created a merged view
     im_aia = np.copy(chmap_aia)
     im_sta = np.copy(chmap_sta)
+    im_stb = np.copy(chmap_stb)
 
     im_aia = im_aia - np.nanmin(im_aia)
     im_aia = im_aia / np.nanmax(im_aia)
@@ -295,7 +385,11 @@ def chortle(cr):
     im_sta = im_sta - np.nanmin(im_sta)
     im_sta = im_sta / np.nanmax(im_sta)
 
+    im_stb = im_stb - np.nanmin(im_stb)
+    im_stb = im_stb / np.nanmax(im_stb)
+
     chim = np.fmin(im_sta, im_aia)
+    chim = np.fmin(chim, im_stb)
 
     # Save everything out to file
     fname = outdir+'chmap/chmap-'+str(cr)+'.fits'
@@ -307,7 +401,7 @@ def chortle(cr):
     ax.contour(lons, lats, chmap, colors='teal',linewidths=0.5)
     ax.set_xlabel('Longitude (degrees)')
     ax.set_ylabel('Latitude (degrees)')
-    ax.set_title('CH - AIA/STA - CR '+str(cr))
+    ax.set_title('CH - AIA/EUVI - CR '+str(cr))
     tight_layout()
     savefig(outdir+'plt/plt-chmap-'+str(cr)+'.pdf')
     savefig(outdir+'plt/plt-chmap-'+str(cr)+'.png', dpi=150)
