@@ -124,7 +124,7 @@ def chortle(cr):
         omap_aia_data = (omap_aia.data / (map_aia.exposure_time / u.second)).value
         
         # Condense the reprojected map minimums into chmap
-        chmap = numpy.fmin(chmap, omap_aia_data)
+        chmap = np.fmin(chmap, omap_aia_data)
 
     chmap_aia = np.copy(chmap)
 
@@ -166,7 +166,7 @@ def chortle(cr):
         omap_sta_data = (omap_sta.data / (map_sta.exposure_time / u.second)).value
         
         # Condense the reprojected map minimums into chmap
-        chmap = numpy.fmin(chmap, omap_sta_data)
+        chmap = np.fmin(chmap, omap_sta_data)
 
     chmap_sta = np.copy(chmap)
 
@@ -208,7 +208,7 @@ def chortle(cr):
         omap_stb_data = (omap_stb.data / (map_stb.exposure_time / u.second)).value
         
         # Condense the reprojected map minimums into chmap
-        chmap = numpy.fmin(chmap, omap_stb_data)
+        chmap = np.fmin(chmap, omap_stb_data)
 
     chmap_stb = np.copy(chmap)
 
