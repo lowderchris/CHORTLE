@@ -48,8 +48,7 @@ def chortle(cr):
     outdir = config['paths']['outdir']
 
     # Specify timing parameters
-    #cr = 2193
-    nsday = 1
+    nsday = 3
 
     # Grab the start and end dates for this rotation
     t0 = sunpy.coordinates.sun.carrington_rotation_time(cr)
@@ -90,7 +89,16 @@ def chortle(cr):
     files_sta.sort() 
 
     files_stb = Fido.fetch(res_stb, path=datdir+'stb/')
-    files_stb.sort() 
+    files_stb.sort()
+
+    skip_aia = skip_sta = skip_stb = False
+
+    if len(files_aia) == 0:
+        skip_aia = True
+    if len(files_sta) == 0:
+        skip_sta = True
+    if len(files_stb) == 0:
+        skip_stb = True
 
     ## Grab a synoptic magnetogram
     br = sunpy.io.fits.read(magdir+'hmi.synoptic_mr_polfil_720s.'+str(cr)+'.Mr_polfil.fits')[1].data
@@ -244,118 +252,124 @@ def chortle(cr):
     pscale = [oshape[0]/180, oshape[1]/360]
 
     # Generate threshold values for AIA
-    qs = np.median(chmap_aia[np.isfinite(chmap_aia)])
-    thrsh = np.array([])
-    [dlat, dlon] = [60,60]
-    for ilat in np.arange(0,180/dlat):
-        for ilon in np.arange(0,360/dlon):
-            plat0 = int(ilat*dlat*pscale[0])
-            plat1 = int((ilat+1)*dlat*pscale[0])
-            plon0 = int(ilon*dlon*pscale[1])
-            plon1 = int((ilon+1)*dlon*pscale[1])
-            sarr = chmap_aia[plat0:plat1, plon0:plon1]
+    qs = np.nanmedian(chmap_aia)
+    if np.isfinite(qs):
+        thrsh = np.array([])
+        [dlat, dlon] = [60,60]
+        for ilat in np.arange(0,180/dlat):
+            for ilon in np.arange(0,360/dlon):
+                plat0 = int(ilat*dlat*pscale[0])
+                plat1 = int((ilat+1)*dlat*pscale[0])
+                plon0 = int(ilon*dlon*pscale[1])
+                plon1 = int((ilon+1)*dlon*pscale[1])
+                sarr = chmap_aia[plat0:plat1, plon0:plon1]
 
-            #sarr_hist = histogram(sarr[where(np.isfinite(sarr))].flatten(), bins=100, range=[np.nanmin(sarr),qs])
-            sarr_hist = np.histogram(sarr[np.where(np.isfinite(sarr))].flatten(), bins=100, range=[0,qs])
-            #sarr_dist = scipy.stats.rv_histogram(sarr_hist)
-            sh_x = sarr_hist[1][0:-1]
-            sh_y = sarr_hist[0]
-            sh_y2 = scipy.signal.convolve(sh_y, scipy.signal.hann(20), mode='same')/sum(scipy.signal.hann(20))
-            pks = scipy.signal.find_peaks_cwt(sh_y2,np.arange(1,20))
-            if len(pks) >= 2:
-                sh_x2 = sh_x[pks[0]:pks[-1]-1]
-                sh_y3 = sh_y2[pks[0]:pks[-1]-1]
-            else:
-                minval = int(len(sh_x)/4)
-                maxval = int(len(sh_x)*0.9)
-                sh_x2 = sh_x[minval:maxval]
-                sh_y3 = sh_y2[minval:maxval]
-            pks2 = scipy.signal.find_peaks_cwt(-1*sh_y3,np.arange(1,20))
-            if len(pks2) != 0:
-                thrsh = np.append(thrsh, sh_x2[pks2[0]])
-            else:
-                thrsh = np.append(thrsh, np.nan)
+                #sarr_hist = histogram(sarr[where(np.isfinite(sarr))].flatten(), bins=100, range=[np.nanmin(sarr),qs])
+                sarr_hist = np.histogram(sarr[np.where(np.isfinite(sarr))].flatten(), bins=100, range=[0,qs])
+                #sarr_dist = scipy.stats.rv_histogram(sarr_hist)
+                sh_x = sarr_hist[1][0:-1]
+                sh_y = sarr_hist[0]
+                sh_y2 = scipy.signal.convolve(sh_y, scipy.signal.hann(20), mode='same')/sum(scipy.signal.hann(20))
+                pks = scipy.signal.find_peaks_cwt(sh_y2,np.arange(1,20))
+                if len(pks) >= 2:
+                    sh_x2 = sh_x[pks[0]:pks[-1]-1]
+                    sh_y3 = sh_y2[pks[0]:pks[-1]-1]
+                else:
+                    minval = int(len(sh_x)/4)
+                    maxval = int(len(sh_x)*0.9)
+                    sh_x2 = sh_x[minval:maxval]
+                    sh_y3 = sh_y2[minval:maxval]
+                pks2 = scipy.signal.find_peaks_cwt(-1*sh_y3,np.arange(1,20))
+                if len(pks2) != 0:
+                    thrsh = np.append(thrsh, sh_x2[pks2[0]])
+                else:
+                    thrsh = np.append(thrsh, np.nan)
 
-    chval_aia = np.nanmean(thrsh)
+        chval_aia = np.nanmean(thrsh)
 
     # Generate threshold values for STA
-    qs = np.median(chmap_sta[np.isfinite(chmap_sta)])
-    thrsh = np.array([])
-    [dlat, dlon] = [60,60]
-    for ilat in np.arange(0,180/dlat):
-        for ilon in np.arange(0,360/dlon):
-            plat0 = int(ilat*dlat*pscale[0])
-            plat1 = int((ilat+1)*dlat*pscale[0])
-            plon0 = int(ilon*dlon*pscale[1])
-            plon1 = int((ilon+1)*dlon*pscale[1])
-            sarr = chmap_sta[plat0:plat1, plon0:plon1]
+    qs = np.nanmedian(chmap_sta)
+    if np.isfinite(qs):
+        thrsh = np.array([])
+        [dlat, dlon] = [60,60]
+        for ilat in np.arange(0,180/dlat):
+            for ilon in np.arange(0,360/dlon):
+                plat0 = int(ilat*dlat*pscale[0])
+                plat1 = int((ilat+1)*dlat*pscale[0])
+                plon0 = int(ilon*dlon*pscale[1])
+                plon1 = int((ilon+1)*dlon*pscale[1])
+                sarr = chmap_sta[plat0:plat1, plon0:plon1]
 
-            #sarr_hist = histogram(sarr[where(np.isfinite(sarr))].flatten(), bins=100, range=[np.nanmin(sarr),qs])
-            sarr_hist = np.histogram(sarr[np.where(np.isfinite(sarr))].flatten(), bins=100, range=[0,qs])
-            #sarr_dist = scipy.stats.rv_histogram(sarr_hist)
-            sh_x = sarr_hist[1][0:-1]
-            sh_y = sarr_hist[0]
-            sh_y2 = scipy.signal.convolve(sh_y, scipy.signal.hann(20), mode='same')/sum(scipy.signal.hann(20))
-            pks = scipy.signal.find_peaks_cwt(sh_y2,np.arange(1,20))
-            if len(pks) >= 2:
-                sh_x2 = sh_x[pks[0]:pks[-1]-1]
-                sh_y3 = sh_y2[pks[0]:pks[-1]-1]
-            else:
-                minval = int(len(sh_x)/4)
-                maxval = int(len(sh_x)*0.9)
-                sh_x2 = sh_x[minval:maxval]
-                sh_y3 = sh_y2[minval:maxval]
-            pks2 = scipy.signal.find_peaks_cwt(-1*sh_y3,np.arange(1,20))
-            if len(pks2) != 0:
-                thrsh = np.append(thrsh, sh_x2[pks2[0]])
-            else:
-                thrsh = np.append(thrsh, np.nan)
+                #sarr_hist = histogram(sarr[where(np.isfinite(sarr))].flatten(), bins=100, range=[np.nanmin(sarr),qs])
+                sarr_hist = np.histogram(sarr[np.where(np.isfinite(sarr))].flatten(), bins=100, range=[0,qs])
+                #sarr_dist = scipy.stats.rv_histogram(sarr_hist)
+                sh_x = sarr_hist[1][0:-1]
+                sh_y = sarr_hist[0]
+                sh_y2 = scipy.signal.convolve(sh_y, scipy.signal.hann(20), mode='same')/sum(scipy.signal.hann(20))
+                pks = scipy.signal.find_peaks_cwt(sh_y2,np.arange(1,20))
+                if len(pks) >= 2:
+                    sh_x2 = sh_x[pks[0]:pks[-1]-1]
+                    sh_y3 = sh_y2[pks[0]:pks[-1]-1]
+                else:
+                    minval = int(len(sh_x)/4)
+                    maxval = int(len(sh_x)*0.9)
+                    sh_x2 = sh_x[minval:maxval]
+                    sh_y3 = sh_y2[minval:maxval]
+                pks2 = scipy.signal.find_peaks_cwt(-1*sh_y3,np.arange(1,20))
+                if len(pks2) != 0:
+                    thrsh = np.append(thrsh, sh_x2[pks2[0]])
+                else:
+                    thrsh = np.append(thrsh, np.nan)
 
-    chval_sta = np.nanmean(thrsh)
+        chval_sta = np.nanmean(thrsh)
 
     # Generate threshold values for STB
-    qs = np.median(chmap_stb[np.isfinite(chmap_stb)])
-    thrsh = np.array([])
-    [dlat, dlon] = [60,60]
-    for ilat in np.arange(0,180/dlat):
-        for ilon in np.arange(0,360/dlon):
-            plat0 = int(ilat*dlat*pscale[0])
-            plat1 = int((ilat+1)*dlat*pscale[0])
-            plon0 = int(ilon*dlon*pscale[1])
-            plon1 = int((ilon+1)*dlon*pscale[1])
-            sarr = chmap_stb[plat0:plat1, plon0:plon1]
+    qs = np.nanmedian(chmap_stb)
+    if np.isfinite(qs):
+        thrsh = np.array([])
+        [dlat, dlon] = [60,60]
+        for ilat in np.arange(0,180/dlat):
+            for ilon in np.arange(0,360/dlon):
+                plat0 = int(ilat*dlat*pscale[0])
+                plat1 = int((ilat+1)*dlat*pscale[0])
+                plon0 = int(ilon*dlon*pscale[1])
+                plon1 = int((ilon+1)*dlon*pscale[1])
+                sarr = chmap_stb[plat0:plat1, plon0:plon1]
 
-            #sarr_hist = histogram(sarr[where(np.isfinite(sarr))].flatten(), bins=100, range=[np.nanmin(sarr),qs])
-            sarr_hist = np.histogram(sarr[np.where(np.isfinite(sarr))].flatten(), bins=100, range=[0,qs])
-            #sarr_dist = scipy.stats.rv_histogram(sarr_hist)
-            sh_x = sarr_hist[1][0:-1]
-            sh_y = sarr_hist[0]
-            sh_y2 = scipy.signal.convolve(sh_y, scipy.signal.hann(20), mode='same')/sum(scipy.signal.hann(20))
-            pks = scipy.signal.find_peaks_cwt(sh_y2,np.arange(1,20))
-            if len(pks) >= 2:
-                sh_x2 = sh_x[pks[0]:pks[-1]-1]
-                sh_y3 = sh_y2[pks[0]:pks[-1]-1]
-            else:
-                minval = int(len(sh_x)/4)
-                maxval = int(len(sh_x)*0.9)
-                sh_x2 = sh_x[minval:maxval]
-                sh_y3 = sh_y2[minval:maxval]
-            pks2 = scipy.signal.find_peaks_cwt(-1*sh_y3,np.arange(1,20))
-            if len(pks2) != 0:
-                thrsh = np.append(thrsh, sh_x2[pks2[0]])
-            else:
-                thrsh = np.append(thrsh, np.nan)
+                #sarr_hist = histogram(sarr[where(np.isfinite(sarr))].flatten(), bins=100, range=[np.nanmin(sarr),qs])
+                sarr_hist = np.histogram(sarr[np.where(np.isfinite(sarr))].flatten(), bins=100, range=[0,qs])
+                #sarr_dist = scipy.stats.rv_histogram(sarr_hist)
+                sh_x = sarr_hist[1][0:-1]
+                sh_y = sarr_hist[0]
+                sh_y2 = scipy.signal.convolve(sh_y, scipy.signal.hann(20), mode='same')/sum(scipy.signal.hann(20))
+                pks = scipy.signal.find_peaks_cwt(sh_y2,np.arange(1,20))
+                if len(pks) >= 2:
+                    sh_x2 = sh_x[pks[0]:pks[-1]-1]
+                    sh_y3 = sh_y2[pks[0]:pks[-1]-1]
+                else:
+                    minval = int(len(sh_x)/4)
+                    maxval = int(len(sh_x)*0.9)
+                    sh_x2 = sh_x[minval:maxval]
+                    sh_y3 = sh_y2[minval:maxval]
+                pks2 = scipy.signal.find_peaks_cwt(-1*sh_y3,np.arange(1,20))
+                if len(pks2) != 0:
+                    thrsh = np.append(thrsh, sh_x2[pks2[0]])
+                else:
+                    thrsh = np.append(thrsh, np.nan)
 
-    chval_stb = np.nanmean(thrsh)
+        chval_stb = np.nanmean(thrsh)
 
     chmap0_aia = np.copy(chmap_aia)
-    chmap0_aia[np.where(chmap_aia>chval_aia)] = 0
+    if not skip_aia:
+        chmap0_aia[np.where(chmap_aia>chval_aia)] = 0
 
     chmap0_sta = np.copy(chmap_sta)
-    chmap0_sta[np.where(chmap_sta>chval_sta)] = 0
+    if not skip_sta:
+        chmap0_sta[np.where(chmap_sta>chval_sta)] = 0
 
     chmap0_stb = np.copy(chmap_stb)
-    chmap0_stb[np.where(chmap_stb>chval_stb)] = 0
+    if not skip_stb:
+        chmap0_stb[np.where(chmap_stb>chval_stb)] = 0
 
     # Generate a merged chmap
     # CL - make changes here to restore to original behavior of measuring CH depth. Might need to create a normalized merged of AIA / STA data to fill the gaps
