@@ -7,38 +7,45 @@ Coronal Hole Observer and Regional Tracker for Long-term Examination
 
 """
 
+# Import libraries
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+import scipy.stats
+import scipy.signal
+import scipy.ndimage
+
+import astropy.units as u
+from astropy.coordinates import SkyCoord
+from astropy.wcs import WCS
+
+import datetime
+
+from reproject import reproject_interp
+
+import sunpy.map
+import sunpy.io
+import sunpy.visualization.colormaps
+
+import glob
+
+from sunpy.net import Fido, attrs as a
+import drms
+import sunpy.visualization.colormaps
+
+import configparser
+
 def chortle(cr):
 
-    # Import libraries
+    # Read configuration file
+    config = configparser.ConfigParser()
+    config.read('config.cfg')
 
-    import matplotlib.pyplot as plt
-    import numpy as np
-
-    import scipy.stats
-    import scipy.signal
-    import scipy.ndimage
-
-    import astropy.units as u
-    from astropy.coordinates import SkyCoord
-    from astropy.wcs import WCS
-
-    import datetime
-
-    from reproject import reproject_interp
-
-    import sunpy.map
-    import sunpy.io
-    import sunpy.visualization.colormaps
-
-    import glob
-
-    from sunpy.net import Fido, attrs as a
-    import drms
-    import sunpy.visualization.colormaps
-
-    # Specify directory structures
-    datdir = '/Users/clowder/data/chortle/'
-    outdir = '/Users/clowder/data/chortle/'
+    # Specify directory structures from configuration file
+    datdir = config['paths']['datdir']
+    magdir = config['paths']['magdir']
+    outdir = config['paths']['outdir']
 
     # Specify timing parameters
     #cr = 2193
@@ -86,7 +93,7 @@ def chortle(cr):
     files_stb.sort() 
 
     ## Grab a synoptic magnetogram
-    br = sunpy.io.fits.read('/Users/clowder/data/hmi.Synoptic_Mr.polfil/hmi.synoptic_mr_polfil_720s.'+str(cr)+'.Mr_polfil.fits')[1].data
+    br = sunpy.io.fits.read(magdir+'hmi.synoptic_mr_polfil_720s.'+str(cr)+'.Mr_polfil.fits')[1].data
 
     ## Generate some blank storage arrays
     oshape = [720,1440]
