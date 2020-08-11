@@ -256,7 +256,7 @@ def chortle(cr):
             sarr = chmap_aia[plat0:plat1, plon0:plon1]
 
             #sarr_hist = histogram(sarr[where(np.isfinite(sarr))].flatten(), bins=100, range=[np.nanmin(sarr),qs])
-            sarr_hist = histogram(sarr[where(np.isfinite(sarr))].flatten(), bins=100, range=[0,qs])
+            sarr_hist = np.histogram(sarr[np.where(np.isfinite(sarr))].flatten(), bins=100, range=[0,qs])
             #sarr_dist = scipy.stats.rv_histogram(sarr_hist)
             sh_x = sarr_hist[1][0:-1]
             sh_y = sarr_hist[0]
@@ -291,7 +291,7 @@ def chortle(cr):
             sarr = chmap_sta[plat0:plat1, plon0:plon1]
 
             #sarr_hist = histogram(sarr[where(np.isfinite(sarr))].flatten(), bins=100, range=[np.nanmin(sarr),qs])
-            sarr_hist = histogram(sarr[where(np.isfinite(sarr))].flatten(), bins=100, range=[0,qs])
+            sarr_hist = np.histogram(sarr[np.where(np.isfinite(sarr))].flatten(), bins=100, range=[0,qs])
             #sarr_dist = scipy.stats.rv_histogram(sarr_hist)
             sh_x = sarr_hist[1][0:-1]
             sh_y = sarr_hist[0]
@@ -326,7 +326,7 @@ def chortle(cr):
             sarr = chmap_stb[plat0:plat1, plon0:plon1]
 
             #sarr_hist = histogram(sarr[where(np.isfinite(sarr))].flatten(), bins=100, range=[np.nanmin(sarr),qs])
-            sarr_hist = histogram(sarr[where(np.isfinite(sarr))].flatten(), bins=100, range=[0,qs])
+            sarr_hist = np.histogram(sarr[np.where(np.isfinite(sarr))].flatten(), bins=100, range=[0,qs])
             #sarr_dist = scipy.stats.rv_histogram(sarr_hist)
             sh_x = sarr_hist[1][0:-1]
             sh_y = sarr_hist[0]
@@ -349,13 +349,13 @@ def chortle(cr):
     chval_stb = np.nanmean(thrsh)
 
     chmap0_aia = np.copy(chmap_aia)
-    chmap0_aia[where(chmap_aia>chval_aia)] = 0
+    chmap0_aia[np.where(chmap_aia>chval_aia)] = 0
 
     chmap0_sta = np.copy(chmap_sta)
-    chmap0_sta[where(chmap_sta>chval_sta)] = 0
+    chmap0_sta[np.where(chmap_sta>chval_sta)] = 0
 
     chmap0_stb = np.copy(chmap_stb)
-    chmap0_stb[where(chmap_stb>chval_stb)] = 0
+    chmap0_stb[np.where(chmap_stb>chval_stb)] = 0
 
     # Generate a merged chmap
     # CL - make changes here to restore to original behavior of measuring CH depth. Might need to create a normalized merged of AIA / STA data to fill the gaps
@@ -371,12 +371,12 @@ def chortle(cr):
     lchmap = (scipy.ndimage.label(chmap1, structure=labstruct))[0]
 
     for i in np.arange(2, lchmap.max()+1):
-        chmag = br[where(lchmap==i)]
+        chmag = br[np.where(lchmap==i)]
         if len(chmag) < 10:
-            chmap1[where(lchmap==i)] = 0
+            chmap1[np.where(lchmap==i)] = 0
             continue
         if abs(scipy.stats.skew(chmag)) < 0.5:
-            chmap1[where(lchmap==i)] = 0
+            chmap1[np.where(lchmap==i)] = 0
             continue
 
     chmap = chmap1
@@ -403,12 +403,12 @@ def chortle(cr):
     sunpy.io.write_file(fname, chmap*chim, header)
 
     # Some plotting
-    f, (ax) = subplots(1, figsize=[6,3])
+    f, (ax) = plt.subplots(1, figsize=[6,3])
     ax.imshow(chim, extent=[0,360,-90,90], cmap=sunpy.visualization.colormaps.cm.sdoaia193, vmin=0, vmax=0.25)
     ax.contour(lons, lats, chmap, colors='teal',linewidths=0.5)
     ax.set_xlabel('Longitude (degrees)')
     ax.set_ylabel('Latitude (degrees)')
     ax.set_title('CH - AIA/EUVI - CR '+str(cr))
-    tight_layout()
-    savefig(outdir+'plt/plt-chmap-'+str(cr)+'.pdf')
-    savefig(outdir+'plt/plt-chmap-'+str(cr)+'.png', dpi=150)
+    plt.tight_layout()
+    plt.savefig(outdir+'plt/plt-chmap-'+str(cr)+'.pdf')
+    plt.savefig(outdir+'plt/plt-chmap-'+str(cr)+'.png', dpi=150)
