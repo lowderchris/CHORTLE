@@ -48,7 +48,7 @@ def chortle(cr):
     outdir = config['paths']['outdir']
 
     # Specify timing parameters
-    nsday = 3
+    nsday = 1
 
     # Grab the start and end dates for this rotation
     t0 = sunpy.coordinates.sun.carrington_rotation_time(cr)
@@ -426,3 +426,4 @@ def chortle(cr):
     plt.tight_layout()
     plt.savefig(outdir+'plt/plt-chmap-'+str(cr)+'.pdf')
     plt.savefig(outdir+'plt/plt-chmap-'+str(cr)+'.png', dpi=150)
+    plt.close('all')
