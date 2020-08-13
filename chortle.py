@@ -414,7 +414,10 @@ def chortle(cr):
 
     # Save everything out to file
     fname = outdir+'chmap/chmap-'+str(cr)+'.fits'
-    sunpy.io.write_file(fname, chmap*chim, header)
+    sunpy.io.write_file(fname, chmap*chim, header, overwrite=True)
+
+    fname = outdir+'chmap/chmap-'+str(cr)+'-chim.fits'
+    sunpy.io.write_file(fname, chim, header, overwrite=True)
 
     # Some plotting
     f, (ax) = plt.subplots(1, figsize=[6,3])
