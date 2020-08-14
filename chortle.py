@@ -29,6 +29,7 @@ import sunpy.io
 import sunpy.visualization.colormaps
 
 import glob
+import os
 
 from sunpy.net import Fido, attrs as a
 import drms
@@ -100,13 +101,14 @@ def chortle(cr):
     if len(files_stb) == 0:
         skip_stb = True
 
-    ## Grab a synoptic magnetogram
-    br = sunpy.io.fits.read(magdir+'hmi.synoptic_mr_polfil_720s.'+str(cr)+'.Mr_polfil.fits')[1].data
-
     ## Generate some blank storage arrays
     oshape = [720,1440]
     chmap = np.zeros(oshape,dtype=np.double)
     chmap[:,:] = np.nan
+
+    ## Grab a synoptic magnetogram
+    br0 = sunpy.io.fits.read(magdir+'hmi.synoptic_mr_polfil_720s.'+str(cr)+'.Mr_polfil.fits')[1].data
+    br = sunpy.image.resample.resample(br0, oshape, method='linear') 
 
     ## Iterate through this data, reprojecting as you go
     for file in files_aia:
@@ -420,13 +422,69 @@ def chortle(cr):
     sunpy.io.write_file(fname, chim, header, overwrite=True)
 
     # Some plotting
-    f, (ax) = plt.subplots(1, figsize=[6,3])
-    ax.imshow(chim, extent=[0,360,-90,90], cmap=sunpy.visualization.colormaps.cm.sdoaia193, vmin=0, vmax=0.25)
-    ax.contour(lons, lats, chmap, colors='teal',linewidths=0.5)
-    ax.set_xlabel('Longitude (degrees)')
-    ax.set_ylabel('Latitude (degrees)')
-    ax.set_title('CH - AIA/EUVI - CR '+str(cr))
-    plt.tight_layout()
-    plt.savefig(outdir+'plt/plt-chmap-'+str(cr)+'.pdf')
-    plt.savefig(outdir+'plt/plt-chmap-'+str(cr)+'.png', dpi=150)
-    plt.close('all')
+    #f, (ax) = plt.subplots(1, figsize=[6,3])
+    #ax.imshow(chim, extent=[0,360,-90,90], cmap=sunpy.visualization.colormaps.cm.sdoaia193, vmin=0, vmax=0.25)
+    #ax.contour(lons, lats, chmap, colors='teal',linewidths=0.5)
+    #ax.set_xlabel('Longitude (degrees)')
+    #ax.set_ylabel('Latitude (degrees)')
+    #ax.set_title('CH - AIA/EUVI - CR '+str(cr))
+    #plt.tight_layout()
+    #plt.savefig(outdir+'plt/plt-chmap-'+str(cr)+'.pdf')
+    #plt.savefig(outdir+'plt/plt-chmap-'+str(cr)+'.png', dpi=150)
+    #plt.close('all')
+
+def genprof(cr0, cr1):
+
+    # Read configuration file
+    config = configparser.ConfigParser()
+    config.read('config.cfg')
+
+    # Specify directory structures from configuration file
+    datdir = config['paths']['datdir']
+    magdir = config['paths']['magdir']
+    outdir = config['paths']['outdir']
+
+    cr0 = 2097
+    cr1 = 2232
+    crs = np.arange(cr0,cr1+1)
+
+    oshape = [720,1440]
+    ncrs = len(crs)
+
+    chprof0 = np.zeros([oshape[0], ncrs], dtype=np.double)
+    chprof0[:,:] = np.nan
+    chprof = np.zeros([oshape[0], ncrs], dtype=np.double)
+    chprof[:,:] = np.nan
+    improf = np.zeros([oshape[0], ncrs], dtype=np.double)
+    improf[:,:] = np.nan
+    sfxprof = np.zeros([oshape[0], ncrs], dtype=np.double)
+    sfxprof[:,:] = np.nan
+    ufxprof = np.zeros([oshape[0], ncrs], dtype=np.double)
+    ufxprof[:,:] = np.nan
+
+    for cr in crs:
+
+        fname = outdir+'chmap/chmap-'+str(cr)+'.fits'
+        if not os.path.exists(fname): continue
+
+        [chdat, chhdr] = (sunpy.io.read_file(fname))[0]
+
+        fname = outdir+'chmap/chmap-'+str(cr)+'-chim.fits'
+        [imdat, imhdr] = (sunpy.io.read_file(fname))[0]
+
+        br0 = sunpy.io.fits.read(magdir+'hmi.synoptic_mr_polfil_720s.'+str(cr)+'.Mr_polfil.fits')[1].data
+        br = sunpy.image.resample.resample(br0, oshape, method='linear')
+        pscale = 4 * np.pi * (6.957e10)**2 / (oshape[0] * oshape[1])
+
+        chprof0[:,cr-cr0] = chdat.sum(1)/oshape[1]
+        chprof[:,cr-cr0] = (chdat!=0).sum(1)/oshape[1]
+        improf[:,cr-cr0] = imdat.sum(1)/oshape[1]
+        sfxprof[:,cr-cr0] = (br*pscale*np.logical_and(chdat!=0,np.isfinite(chdat))).sum(1)
+        ufxprof[:,cr-cr0] = (np.abs(br*pscale*np.logical_and(chdat!=0,np.isfinite(chdat)))).sum(1)
+
+    np.save('chprof0.npy',chprof0)
+    np.save('chprof.npy',chprof)
+    np.save('improf.npy',improf)
+    np.save('sfxprof.npy',sfxprof)
+    np.save('ufxprof.npy',ufxprof)
+    np.save('crs.npy', crs)
