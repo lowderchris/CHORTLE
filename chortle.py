@@ -33,7 +33,6 @@ import os
 
 from sunpy.net import Fido, attrs as a
 import drms
-import sunpy.visualization.colormaps
 
 import configparser
 
