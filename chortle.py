@@ -67,11 +67,11 @@ def chortle(cr):
     search_aia = (a.Instrument('AIA') & a.Sample(nsday * u.day) & a.Time(t0, t1))
     res_aia = Fido.search(a.Wavelength(19.3 * u.nm), search_aia)
 
-    search_sta = (a.vso.Source('STEREO_A') & a.Instrument('SECCHI') & a.Detector('EUVI') & a.Sample(
+    search_sta = (a.Source('STEREO_A') & a.Instrument('SECCHI') & a.Detector('EUVI') & a.Sample(
         nsday * u.day) & a.Time(t0, t1))
     res_sta = Fido.search(a.Wavelength(19.5 * u.nm), search_sta)
 
-    search_stb = (a.vso.Source('STEREO_B') & a.Instrument('SECCHI') & a.Detector('EUVI') & a.Sample(
+    search_stb = (a.Source('STEREO_B') & a.Instrument('SECCHI') & a.Detector('EUVI') & a.Sample(
         nsday * u.day) & a.Time(t0, t1))
     res_stb = Fido.search(a.Wavelength(19.5 * u.nm), search_stb)
 
