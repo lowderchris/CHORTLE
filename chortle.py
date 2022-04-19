@@ -90,6 +90,8 @@ def chortle(cr):
     files_stb = Fido.fetch(res_stb, path=datdir + 'stb/')
     files_stb.sort()
 
+    # TODO - Check for bad data - maybe check file size?
+
     skip_aia = skip_sta = skip_stb = False
 
     if len(files_aia) == 0:
@@ -120,9 +122,10 @@ def chortle(cr):
 
         # Construct an output header
         header = sunpy.map.make_fitswcs_header(np.empty(oshape),
-               SkyCoord(0, 0, unit=u.deg,
+               SkyCoord(0*u.deg, 0*u.deg, 1*u.AU,
                         frame="heliographic_carrington",
-                        obstime=map_aia.date),
+                        obstime=map_aia.date,
+                        observer='self'),
                scale=[180 / oshape[0],
                       360 / oshape[1]] * u.deg / u.pix,
                projection_code="CAR")
@@ -161,10 +164,11 @@ def chortle(cr):
 
         # Construct an output header
         header = sunpy.map.make_fitswcs_header(np.empty(oshape),
-               SkyCoord(0, 0, unit=u.deg,
+               SkyCoord(0*u.deg, 0*u.deg, 1*u.AU,
                         frame="heliographic_carrington",
                         # frame="heliographic_stonyhurst",
-                        obstime=map_sta.date),
+                        obstime=map_sta.date,
+                        observer='self'),
                # reference_pixel=[0,(oshape[0] - 1)/2.]*u.pix,
                scale=[180 / oshape[0],
                       360 / oshape[1]] * u.deg / u.pix,
@@ -204,10 +208,11 @@ def chortle(cr):
 
         # Construct an output header
         header = sunpy.map.make_fitswcs_header(np.empty(oshape),
-               SkyCoord(0, 0, unit=u.deg,
+               SkyCoord(0*u.deg, 0*u.deg, 1*u.AU,
                         frame="heliographic_carrington",
                         # frame="heliographic_stonyhurst",
-                        obstime=map_stb.date),
+                        obstime=map_stb.date,
+                        observer='self'),
                # reference_pixel=[0,(oshape[0] - 1)/2.]*u.pix,
                scale=[180 / oshape[0],
                       360 / oshape[1]] * u.deg / u.pix,
@@ -448,8 +453,6 @@ def genprof(cr0, cr1):
     magdir = config['paths']['magdir']
     outdir = config['paths']['outdir']
 
-    # cr0 = 2097
-    # cr1 = 2232
     crs = np.arange(cr0, cr1 + 1)
 
     oshape = [720, 1440]
@@ -457,14 +460,36 @@ def genprof(cr0, cr1):
 
     chprof0 = np.zeros([oshape[0], ncrs], dtype=np.double)
     chprof0[:, :] = np.nan
+
     chprof = np.zeros([oshape[0], ncrs], dtype=np.double)
     chprof[:, :] = np.nan
+
     improf = np.zeros([oshape[0], ncrs], dtype=np.double)
     improf[:, :] = np.nan
+
     sfxprof = np.zeros([oshape[0], ncrs], dtype=np.double)
     sfxprof[:, :] = np.nan
+
     ufxprof = np.zeros([oshape[0], ncrs], dtype=np.double)
     ufxprof[:, :] = np.nan
+
+    sfxprof90 = np.zeros([oshape[0], ncrs], dtype=np.double)
+    sfxprof90[:, :] = np.nan
+
+    ufxprof90 = np.zeros([oshape[0], ncrs], dtype=np.double)
+    ufxprof90[:, :] = np.nan
+
+    sfxprof80 = np.zeros([oshape[0], ncrs], dtype=np.double)
+    sfxprof80[:, :] = np.nan
+
+    ufxprof80 = np.zeros([oshape[0], ncrs], dtype=np.double)
+    ufxprof80[:, :] = np.nan
+
+    sfxprof70 = np.zeros([oshape[0], ncrs], dtype=np.double)
+    sfxprof70[:, :] = np.nan
+
+    ufxprof70 = np.zeros([oshape[0], ncrs], dtype=np.double)
+    ufxprof70[:, :] = np.nan
 
     for cr in crs:
 
@@ -481,15 +506,35 @@ def genprof(cr0, cr1):
         br = sunpy.image.resample.resample(br0, oshape, method='linear')
         pscale = 4 * np.pi * 6.957e10 ** 2 / (oshape[0] * oshape[1])
 
+        chtop = np.nanmax(chdat)
+        chbot = np.nanmin(chdat[np.where(chdat!=0)])
+        chdep = chtop - chbot
+
+        ch90 = np.logical_and(chdat >= chbot, chdat <= (0.9*chtop))
+        ch80 = np.logical_and(chdat >= chbot, chdat <= (0.8*chtop))
+        ch70 = np.logical_and(chdat >= chbot, chdat <= (0.7*chtop))
+
         chprof0[:, cr - cr0] = chdat.sum(1) / oshape[1]
-        chprof[:, cr - cr0] = (chdat != 0).sum(1) / oshape[1]
+        chprof[:, cr - cr0] = (chdat != 0).sum(1, where=np.isfinite(chdat)) / oshape[1]
         improf[:, cr - cr0] = imdat.sum(1) / oshape[1]
         sfxprof[:, cr - cr0] = (br * pscale * np.logical_and(chdat != 0, np.isfinite(chdat))).sum(1)
         ufxprof[:, cr - cr0] = (np.abs(br * pscale * np.logical_and(chdat != 0, np.isfinite(chdat)))).sum(1)
+        sfxprof90[:, cr - cr0] = (br * pscale * ch90).sum(1)
+        ufxprof90[:, cr - cr0] = (np.abs(br * pscale * ch90)).sum(1)
+        sfxprof80[:, cr - cr0] = (br * pscale * ch80).sum(1)
+        ufxprof80[:, cr - cr0] = (np.abs(br * pscale * ch80)).sum(1)
+        sfxprof70[:, cr - cr0] = (br * pscale * ch70).sum(1)
+        ufxprof70[:, cr - cr0] = (np.abs(br * pscale * ch70)).sum(1)
 
     np.save(outdir + 'dat/chprof0.npy', chprof0)
     np.save(outdir + 'dat/chprof.npy', chprof)
     np.save(outdir + 'dat/improf.npy', improf)
     np.save(outdir + 'dat/sfxprof.npy', sfxprof)
     np.save(outdir + 'dat/ufxprof.npy', ufxprof)
+    np.save(outdir + 'dat/sfxprof90.npy', sfxprof90)
+    np.save(outdir + 'dat/ufxprof90.npy', ufxprof90)
+    np.save(outdir + 'dat/sfxprof80.npy', sfxprof80)
+    np.save(outdir + 'dat/ufxprof80.npy', ufxprof80)
+    np.save(outdir + 'dat/sfxprof70.npy', sfxprof70)
+    np.save(outdir + 'dat/ufxprof70.npy', ufxprof70)
     np.save(outdir + 'dat/crs.npy', crs)
