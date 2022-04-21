@@ -9,29 +9,22 @@ Coronal Hole Observer and Regional Tracker for Long-term Examination
 
 # Import libraries
 
-import numpy as np
-
-import scipy.stats
-import scipy.signal
-import scipy.ndimage
-
-import astropy.units as u
-from astropy.coordinates import SkyCoord
-from astropy.wcs import WCS
-
+import configparser
 import datetime
-
-from reproject import reproject_interp
-
-import sunpy.map
-import sunpy.io
-import sunpy.visualization.colormaps
-
 import os
 
+import astropy.units as u
+import numpy as np
+import scipy.ndimage
+import scipy.signal
+import scipy.stats
+import sunpy.io
+import sunpy.map
+import sunpy.visualization.colormaps
+from astropy.coordinates import SkyCoord
+from astropy.wcs import WCS
+from reproject import reproject_interp
 from sunpy.net import Fido, attrs as a
-
-import configparser
 
 
 def chortle(cr):
@@ -122,13 +115,13 @@ def chortle(cr):
 
         # Construct an output header
         header = sunpy.map.make_fitswcs_header(np.empty(oshape),
-               SkyCoord(0*u.deg, 0*u.deg, 1*u.AU,
-                        frame="heliographic_carrington",
-                        obstime=map_aia.date,
-                        observer='self'),
-               scale=[180 / oshape[0],
-                      360 / oshape[1]] * u.deg / u.pix,
-               projection_code="CAR")
+                                               SkyCoord(0 * u.deg, 0 * u.deg, 1 * u.AU,
+                                                        frame="heliographic_carrington",
+                                                        obstime=map_aia.date,
+                                                        observer='self'),
+                                               scale=[180 / oshape[0],
+                                                      360 / oshape[1]] * u.deg / u.pix,
+                                               projection_code="CAR")
 
         # header['crval2'] = 0
         out_wcs = WCS(header)
@@ -164,15 +157,15 @@ def chortle(cr):
 
         # Construct an output header
         header = sunpy.map.make_fitswcs_header(np.empty(oshape),
-               SkyCoord(0*u.deg, 0*u.deg, 1*u.AU,
-                        frame="heliographic_carrington",
-                        # frame="heliographic_stonyhurst",
-                        obstime=map_sta.date,
-                        observer='self'),
-               # reference_pixel=[0,(oshape[0] - 1)/2.]*u.pix,
-               scale=[180 / oshape[0],
-                      360 / oshape[1]] * u.deg / u.pix,
-               projection_code="CAR")
+                                               SkyCoord(0 * u.deg, 0 * u.deg, 1 * u.AU,
+                                                        frame="heliographic_carrington",
+                                                        # frame="heliographic_stonyhurst",
+                                                        obstime=map_sta.date,
+                                                        observer='self'),
+                                               # reference_pixel=[0,(oshape[0] - 1)/2.]*u.pix,
+                                               scale=[180 / oshape[0],
+                                                      360 / oshape[1]] * u.deg / u.pix,
+                                               projection_code="CAR")
 
         # header['crval2'] = 0
         out_wcs = WCS(header)
@@ -208,15 +201,15 @@ def chortle(cr):
 
         # Construct an output header
         header = sunpy.map.make_fitswcs_header(np.empty(oshape),
-               SkyCoord(0*u.deg, 0*u.deg, 1*u.AU,
-                        frame="heliographic_carrington",
-                        # frame="heliographic_stonyhurst",
-                        obstime=map_stb.date,
-                        observer='self'),
-               # reference_pixel=[0,(oshape[0] - 1)/2.]*u.pix,
-               scale=[180 / oshape[0],
-                      360 / oshape[1]] * u.deg / u.pix,
-               projection_code="CAR")
+                                               SkyCoord(0 * u.deg, 0 * u.deg, 1 * u.AU,
+                                                        frame="heliographic_carrington",
+                                                        # frame="heliographic_stonyhurst",
+                                                        obstime=map_stb.date,
+                                                        observer='self'),
+                                               # reference_pixel=[0,(oshape[0] - 1)/2.]*u.pix,
+                                               scale=[180 / oshape[0],
+                                                      360 / oshape[1]] * u.deg / u.pix,
+                                               projection_code="CAR")
 
         # header['crval2'] = 0
         out_wcs = WCS(header)
@@ -507,12 +500,12 @@ def genprof(cr0, cr1):
         pscale = 4 * np.pi * 6.957e10 ** 2 / (oshape[0] * oshape[1])
 
         chtop = np.nanmax(chdat)
-        chbot = np.nanmin(chdat[np.where(chdat!=0)])
+        chbot = np.nanmin(chdat[np.where(chdat != 0)])
         chdep = chtop - chbot
 
-        ch90 = np.logical_and(chdat >= chbot, chdat <= (0.9*chtop))
-        ch80 = np.logical_and(chdat >= chbot, chdat <= (0.8*chtop))
-        ch70 = np.logical_and(chdat >= chbot, chdat <= (0.7*chtop))
+        ch90 = np.logical_and(chdat >= chbot, chdat <= (0.9 * chtop))
+        ch80 = np.logical_and(chdat >= chbot, chdat <= (0.8 * chtop))
+        ch70 = np.logical_and(chdat >= chbot, chdat <= (0.7 * chtop))
 
         chprof0[:, cr - cr0] = chdat.sum(1) / oshape[1]
         chprof[:, cr - cr0] = (chdat != 0).sum(1, where=np.isfinite(chdat)) / oshape[1]
