@@ -13,9 +13,18 @@ A previous incarnation of this code, GACHD ([Lowder et al. 2014](http://adsabs.h
 - Merging and bridging these datasets to cover solar cycles 23 and 24
 - Tracking of coronal hole features to provide statistics on lifetimes and evolution
 
-## Installation
+## Usage
 
-Currently, I've uploaded this code as a draft of porting the basic methodology of the original code over from IDL to Python. It exists as a script, with all kinds of terrible work-in-progress qualities. Use at your own peril. Notably a separate version of the code, designed to work with EIT data, is in development and is not fully functional at the moment. Eventually this will be merged and modularized into one set of routines.
+```python
+import numpy as np
+from chortle import chortle, genprof
+
+crlist = np.arange(2193,2200)
+
+chortle(crlist)
+
+genprof(crlist[0], crlist[-1])
+```
 
 ## Notes
 
