@@ -1,6 +1,8 @@
 # CHORTLE
 Coronal Hole Observer and Regional Tracker for Long-term Examination
 
+[![DOI](https://zenodo.org/badge/121658645.svg)](https://zenodo.org/badge/latestdoi/121658645)
+
 ## Overview
 Manifesting as regions of decreased emission in extreme ultraviolet (EUV) and x-ray wavelengths, coronal holes are the observational signatures of the roots of open solar magnetic field. Coronal plasma within these regions is free to flow outward along open magnetic field lines, resulting in reduced density and emission. Identifying and characterizing these coronal hole regions provides useful insights into their connection with open magnetic field, their evolution over the solar cycle, and impacts on space weather as a source of fast solar wind. The Coronal Hole Observer and Regional Tracker for Long-term Examination (CHORTLE) provides an automated and adaptive tool for coronal hole detection, using an intensity thresholding technique combined with a consideration of enclosed magnetic flux. Utilizing EUV data from a variety of sources including SOHO/EIT, SDO/AIA, and STEREO/EUVI A&B, coverage stretches back from solar cycle 23 to present, with multi-instrument merged observations providing enhanced polar and far-side coverage where available. Coronal hole depth maps are generated at a variety of cadences, ranging from instantaneous snapshots to aggregate maps over solar rotation time scales. These maps are further assembled to provide coronal hole latitudinal distributions and enclosed open magnetic flux measurements over the span of solar cycles, yielding both a description of coronal hole evolutionary patterns and a long-term set of data for comparison with both models and observations.
 
