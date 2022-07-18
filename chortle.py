@@ -591,7 +591,7 @@ def chortle_eit(cr):
         # This is a weird workaround since I can't add nans to int16 arrs
         temp_header = map_eit.meta
         map_eit = sunpy.map.Map((map_eit.data.astype(np.float), temp_header))
-        map_eit.data[where(map_eit.data == 0)] = np.nan
+        map_eit.data[np.where(map_eit.data == 0)] = np.nan
         
         # Construct an output header
         header = sunpy.map.make_fitswcs_header(np.empty(oshape),
@@ -615,7 +615,7 @@ def chortle_eit(cr):
         omap_eit_data = (omap_eit.data / (map_eit.exposure_time / u.second)).value
 
         # Condense the reprojected map minimums into chmap
-        chmap = numpy.fmin(chmap, omap_eit_data)
+        chmap = np.fmin(chmap, omap_eit_data)
 
     chmap_eit = np.copy(chmap)
 
@@ -642,7 +642,7 @@ def chortle_eit(cr):
             plon1 = int((ilon+1)*dlon*pscale[1])
             sarr = chmap_eit[plat0:plat1, plon0:plon1]
 
-            sarr_hist = histogram(sarr[where(np.isfinite(sarr))].flatten(), bins=100, range=[np.nanmin(sarr),np.nanmax(sarr)])
+            sarr_hist = np.histogram(sarr[np.where(np.isfinite(sarr))].flatten(), bins=100, range=[np.nanmin(sarr),np.nanmax(sarr)])
             #sarr_dist = scipy.stats.rv_histogram(sarr_hist)
             sh_x = sarr_hist[1][0:-1]
             sh_y = sarr_hist[0]
@@ -665,7 +665,7 @@ def chortle_eit(cr):
     chval_eit = np.nanmean(thrsh)
 
     chmap0_eit = np.copy(chmap_eit)
-    chmap0_eit[where(chmap_eit>chval_eit)] = 0
+    chmap0_eit[np.where(chmap_eit>chval_eit)] = 0
 
     # Generate a merged chmap
     # CL - make changes here to restore to original behavior of measuring CH depth. Might need to create a normalized merged of AIA / STA data to fill the gaps
@@ -679,12 +679,12 @@ def chortle_eit(cr):
     lchmap = (scipy.ndimage.label(chmap1, structure=labstruct))[0]
 
     for i in np.arange(2, lchmap.max()+1):
-        chmag = br[where(lchmap==i)]
+        chmag = br[np.where(lchmap==i)]
         if len(chmag) < 10:
-            chmap1[where(lchmap==i)] = 0
+            chmap1[np.where(lchmap==i)] = 0
             continue
         if abs(scipy.stats.skew(chmag)) < 0.5:
-            chmap1[where(lchmap==i)] = 0
+            chmap1[np.where(lchmap==i)] = 0
             continue
 
     chmap = chmap1
