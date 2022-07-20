@@ -26,6 +26,8 @@ from astropy.wcs import WCS
 from reproject import reproject_interp
 from sunpy.net import Fido, attrs as a
 
+import matplotlib.pyplot as plt
+
 
 def chortle(cr, plot=False):
 
@@ -393,6 +395,10 @@ def chortle(cr, plot=False):
     chim = np.fmin(im_sta, im_aia)
     chim = np.fmin(chim, im_stb)
 
+    # Generate latitude and longitude coordinates
+    lats = np.linspace(-90,90,oshape[0])
+    lons = np.linspace(0,360,oshape[1])
+
     # Save everything out to file
     fname = outdir + 'chmap/chmap-' + str(cr) + '.fits'
     sunpy.io.write_file(fname, chmap * chim, header, overwrite=True)
@@ -400,7 +406,7 @@ def chortle(cr, plot=False):
     fname = outdir + 'chmap/chmap-' + str(cr) + '-chim.fits'
     sunpy.io.write_file(fname, chim, header, overwrite=True)
 
-    if plot == True
+    if plot == True:
 
         # Some plotting
         f, (ax) = plt.subplots(1, figsize=[6,3])
@@ -676,12 +682,12 @@ def chortle_eit(cr, plot=False):
     if plot == True:
 
         # Some plotting
-        f, (ax) = subplots(1, figsize=[6,3])
+        f, (ax) = plt.subplots(1, figsize=[6,3])
         ax.imshow(chim, extent=[0,360,-90,90], cmap=sunpy.visualization.colormaps.cm.sohoeit195, vmin=0, vmax=0.5)
         ax.contour(lons, lats, chmap, colors='teal',linewidths=0.5)
         ax.set_xlabel('Longitude (degrees)')
         ax.set_ylabel('Latitude (degrees)')
         ax.set_title('CH - EIT - CR '+str(cr))
-        tight_layout()
-        savefig(outdir+'chmap/plt-chmap-'+str(cr)+'-eit.pdf')
-        savefig(outdir+'chmap/plt-chmap-'+str(cr)+'-eit.png', dpi=150)
+        plt.tight_layout()
+        plt.savefig(outdir+'chmap/plt-chmap-'+str(cr)+'-eit.pdf')
+        plt.savefig(outdir+'chmap/plt-chmap-'+str(cr)+'-eit.png', dpi=150)
