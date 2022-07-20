@@ -27,7 +27,7 @@ from reproject import reproject_interp
 from sunpy.net import Fido, attrs as a
 
 
-def chortle(cr):
+def chortle(cr, plot=False):
 
     # Read configuration file
     config = configparser.ConfigParser()
@@ -83,8 +83,6 @@ def chortle(cr):
 
     files_stb = Fido.fetch(res_stb, path=datdir + 'stb/')
     files_stb.sort()
-
-    # TODO - Check for bad data - maybe check file size?
 
     skip_aia = skip_sta = skip_stb = False
 
@@ -163,7 +161,6 @@ def chortle(cr):
                                                         # frame="heliographic_stonyhurst",
                                                         obstime=map_sta.date,
                                                         observer='self'),
-                                               # reference_pixel=[0,(oshape[0] - 1)/2.]*u.pix,
                                                scale=[180 / oshape[0],
                                                       360 / oshape[1]] * u.deg / u.pix,
                                                projection_code="CAR")
@@ -207,7 +204,6 @@ def chortle(cr):
                                                         # frame="heliographic_stonyhurst",
                                                         obstime=map_stb.date,
                                                         observer='self'),
-                                               # reference_pixel=[0,(oshape[0] - 1)/2.]*u.pix,
                                                scale=[180 / oshape[0],
                                                       360 / oshape[1]] * u.deg / u.pix,
                                                projection_code="CAR")
@@ -229,15 +225,7 @@ def chortle(cr):
 
     chmap_stb = np.copy(chmap)
 
-    # CL - Make sure to align output maps with longitude coordinates,
-    # notably shift the zero point from the center to the edge of the data frame
-    # coords = sunpy.map.all_coordinates_from_map(omap_aia)
-
-    # CL - Create a secondary map weighted by longevity of CH over rotation when observed?
-
     # Shift things and generate coordinates
-    # CL - Temporary fix for weird start NaN column and row
-    # CL - Might also need to shift coordinates to sine latitude...
     chmap_aia[:, 0] = (chmap_aia[:, -1] + chmap_aia[:, 1]) / 2
     chmap_aia[0, :] = np.nan
     chmap_aia = np.roll(chmap_aia, [0, int(oshape[1] / 2)])
@@ -250,8 +238,6 @@ def chortle(cr):
     chmap_stb[0, :] = np.nan
     chmap_stb = np.roll(chmap_stb, [0, int(oshape[1] / 2)])
 
-    # lats = np.linspace(-90, 90, oshape[0])
-    # lons = np.linspace(0, 360, oshape[1])
     pscale = [oshape[0] / 180, oshape[1] / 360]
 
     # Generate threshold values for AIA
@@ -267,9 +253,7 @@ def chortle(cr):
                 plon1 = int((ilon + 1) * dlon * pscale[1])
                 sarr = chmap_aia[plat0:plat1, plon0:plon1]
 
-                # sarr_hist = histogram(sarr[where(np.isfinite(sarr))].flatten(), bins=100, range=[np.nanmin(sarr),qs])
                 sarr_hist = np.histogram(sarr[np.where(np.isfinite(sarr))].flatten(), bins=100, range=[0, qs])
-                # sarr_dist = scipy.stats.rv_histogram(sarr_hist)
                 sh_x = sarr_hist[1][0:-1]
                 sh_y = sarr_hist[0]
                 sh_y2 = scipy.signal.convolve(sh_y, scipy.signal.hann(20), mode='same') / sum(scipy.signal.hann(20))
@@ -303,9 +287,7 @@ def chortle(cr):
                 plon1 = int((ilon + 1) * dlon * pscale[1])
                 sarr = chmap_sta[plat0:plat1, plon0:plon1]
 
-                # sarr_hist = histogram(sarr[where(np.isfinite(sarr))].flatten(), bins=100, range=[np.nanmin(sarr),qs])
                 sarr_hist = np.histogram(sarr[np.where(np.isfinite(sarr))].flatten(), bins=100, range=[0, qs])
-                # sarr_dist = scipy.stats.rv_histogram(sarr_hist)
                 sh_x = sarr_hist[1][0:-1]
                 sh_y = sarr_hist[0]
                 sh_y2 = scipy.signal.convolve(sh_y, scipy.signal.hann(20), mode='same') / sum(scipy.signal.hann(20))
@@ -339,9 +321,7 @@ def chortle(cr):
                 plon1 = int((ilon + 1) * dlon * pscale[1])
                 sarr = chmap_stb[plat0:plat1, plon0:plon1]
 
-                # sarr_hist = histogram(sarr[where(np.isfinite(sarr))].flatten(), bins=100, range=[np.nanmin(sarr),qs])
                 sarr_hist = np.histogram(sarr[np.where(np.isfinite(sarr))].flatten(), bins=100, range=[0, qs])
-                # sarr_dist = scipy.stats.rv_histogram(sarr_hist)
                 sh_x = sarr_hist[1][0:-1]
                 sh_y = sarr_hist[0]
                 sh_y2 = scipy.signal.convolve(sh_y, scipy.signal.hann(20), mode='same') / sum(scipy.signal.hann(20))
@@ -375,11 +355,7 @@ def chortle(cr):
         chmap0_stb[np.where(chmap_stb > chval_stb)] = 0
 
     # Generate a merged chmap
-    # CL - make changes here to restore to original behavior of measuring CH depth.
-    # Might need to create a normalized merged of AIA / STA data to fill the gaps
-    # nodat = (np.logical_and(~np.isfinite(chmap0_aia), ~np.isfinite(chmap0_sta)))
     chmap0 = (np.nansum(np.dstack((chmap0_aia, chmap0_sta, chmap0_stb)), 2) != 0)
-    # chmap0 = chmap_aia * (np.nansum(np.dstack((chmap0_aia, chmap0_sta)),2) != 0)
 
     ocstruct = np.ones([3, 3])
     chmap1 = scipy.ndimage.binary_opening(scipy.ndimage.binary_closing(chmap0, structure=ocstruct, iterations=1),
@@ -424,17 +400,19 @@ def chortle(cr):
     fname = outdir + 'chmap/chmap-' + str(cr) + '-chim.fits'
     sunpy.io.write_file(fname, chim, header, overwrite=True)
 
-    # Some plotting
-    # f, (ax) = plt.subplots(1, figsize=[6,3])
-    # ax.imshow(chim, extent=[0,360,-90,90], cmap=sunpy.visualization.colormaps.cm.sdoaia193, vmin=0, vmax=0.25)
-    # ax.contour(lons, lats, chmap, colors='teal',linewidths=0.5)
-    # ax.set_xlabel('Longitude (degrees)')
-    # ax.set_ylabel('Latitude (degrees)')
-    # ax.set_title('CH - AIA/EUVI - CR '+str(cr))
-    # plt.tight_layout()
-    # plt.savefig(outdir+'plt/plt-chmap-'+str(cr)+'.pdf')
-    # plt.savefig(outdir+'plt/plt-chmap-'+str(cr)+'.png', dpi=150)
-    # plt.close('all')
+    if plot == True
+
+        # Some plotting
+        f, (ax) = plt.subplots(1, figsize=[6,3])
+        ax.imshow(chim, extent=[0,360,-90,90], cmap=sunpy.visualization.colormaps.cm.sdoaia193, vmin=0, vmax=0.25)
+        ax.contour(lons, lats, chmap, colors='teal',linewidths=0.5)
+        ax.set_xlabel('Longitude (degrees)')
+        ax.set_ylabel('Latitude (degrees)')
+        ax.set_title('CH - AIA/EUVI - CR '+str(cr))
+        plt.tight_layout()
+        plt.savefig(outdir+'plt/plt-chmap-'+str(cr)+'.pdf')
+        plt.savefig(outdir+'plt/plt-chmap-'+str(cr)+'.png', dpi=150)
+        plt.close('all')
 
 
 def genprof(cr0, cr1):
@@ -533,7 +511,7 @@ def genprof(cr0, cr1):
     np.save(outdir + 'dat/ufxprof70.npy', ufxprof70)
     np.save(outdir + 'dat/crs.npy', crs)
 
-def chortle_eit(cr):
+def chortle_eit(cr, plot=False):
 
     # Read configuration file
     config = configparser.ConfigParser()
@@ -588,7 +566,6 @@ def chortle_eit(cr):
         if map_eit.exposure_time == 0: continue
 
         # Remove any missing data
-        # This is a weird workaround since I can't add nans to int16 arrs
         temp_header = map_eit.meta
         map_eit = sunpy.map.Map((map_eit.data.astype(np.float), temp_header))
         map_eit.data[np.where(map_eit.data == 0)] = np.nan
@@ -602,7 +579,6 @@ def chortle_eit(cr):
                               360 / oshape[1]] * u.deg / u.pix,
                        projection_code="CAR")
 
-        #header['crval2'] = 0
         out_wcs = WCS(header)
 
         # Reproject
@@ -620,8 +596,6 @@ def chortle_eit(cr):
     chmap_eit = np.copy(chmap)
 
     # Shift things and generate coordinates
-    # CL - Temporary fix for weird start NaN column and row
-    # CL - Might also need to shift coordinates to sine latitude...
     chmap_eit[:,0] = (chmap_eit[:,-1]+chmap_eit[:,1])/2
     chmap_eit[0,:] = np.nan
     chmap_eit = np.roll(chmap_eit, [0,int(oshape[1]/2)])
@@ -643,7 +617,6 @@ def chortle_eit(cr):
             sarr = chmap_eit[plat0:plat1, plon0:plon1]
 
             sarr_hist = np.histogram(sarr[np.where(np.isfinite(sarr))].flatten(), bins=100, range=[np.nanmin(sarr),np.nanmax(sarr)])
-            #sarr_dist = scipy.stats.rv_histogram(sarr_hist)
             sh_x = sarr_hist[1][0:-1]
             sh_y = sarr_hist[0]
             sh_y2 = scipy.signal.convolve(sh_y, scipy.signal.hann(20), mode='same')/sum(scipy.signal.hann(20))
@@ -668,7 +641,6 @@ def chortle_eit(cr):
     chmap0_eit[np.where(chmap_eit>chval_eit)] = 0
 
     # Generate a merged chmap
-    # CL - make changes here to restore to original behavior of measuring CH depth. Might need to create a normalized merged of AIA / STA data to fill the gaps
     chmap0 = chmap_eit
 
     ocstruct = np.ones([3,3])
@@ -701,13 +673,15 @@ def chortle_eit(cr):
     fname = outdir+'chmap/chmap-'+str(cr)+'-eit.fits'
     sunpy.io.write_file(fname, chmap*chim, header, overwrite=True)
 
-    # Some plotting
-    # f, (ax) = subplots(1, figsize=[6,3])
-    # ax.imshow(chim, extent=[0,360,-90,90], cmap=sunpy.visualization.colormaps.cm.sohoeit195, vmin=0, vmax=0.5)
-    # ax.contour(lons, lats, chmap, colors='teal',linewidths=0.5)
-    # ax.set_xlabel('Longitude (degrees)')
-    # ax.set_ylabel('Latitude (degrees)')
-    # ax.set_title('CH - EIT - CR '+str(cr))
-    # tight_layout()
-    # savefig(outdir+'chmap/plt-chmap-'+str(cr)+'-eit.pdf')
-    # savefig(outdir+'chmap/plt-chmap-'+str(cr)+'-eit.png', dpi=150)
+    if plot == True:
+
+        # Some plotting
+        f, (ax) = subplots(1, figsize=[6,3])
+        ax.imshow(chim, extent=[0,360,-90,90], cmap=sunpy.visualization.colormaps.cm.sohoeit195, vmin=0, vmax=0.5)
+        ax.contour(lons, lats, chmap, colors='teal',linewidths=0.5)
+        ax.set_xlabel('Longitude (degrees)')
+        ax.set_ylabel('Latitude (degrees)')
+        ax.set_title('CH - EIT - CR '+str(cr))
+        tight_layout()
+        savefig(outdir+'chmap/plt-chmap-'+str(cr)+'-eit.pdf')
+        savefig(outdir+'chmap/plt-chmap-'+str(cr)+'-eit.png', dpi=150)
