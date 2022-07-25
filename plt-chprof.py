@@ -8,9 +8,7 @@ import sunpy.io
 import numpy as np
 
 import matplotlib.dates as mdates
-
-light_figs()
-#keynote_figs()
+import matplotlib.pyplot as plt
 
 chprof0 = np.load('dat/chprof0.npy')
 chprof = np.load('dat/chprof.npy')
@@ -28,72 +26,72 @@ ndts = mdates.date2num(dts)
 
 # 1920x1080 recommended size
 
-f, (ax) = subplots(1, figsize=[6,2.5])
-im = ax.imshow(chprof0, extent=[ndts[0],ndts[-1], -90, 90], aspect='auto', vmin=0, vmax=0.02)
-cb = colorbar(im, ax=ax, label='Fractional CH Coverage', extend='max')
+f, (ax) = plt.subplots(1, figsize=[6,2.5])
+im = ax.imshow(chprof0, extent=[ndts[0],ndts[-1], -90, 90], aspect='auto', vmin=0, cmap='viridis')
+cb = plt.colorbar(im, ax=ax, label='Fractional CH Coverage', extend='max')
 axb = ax.twiny()
 axb.set_xlim(crs[0], crs[-1])
 ax.set_xlabel('Date')
 axb.set_xlabel('Carrington Rotation')
 ax.set_ylabel('Latitude')
 ax.xaxis_date()
-tight_layout()
-savefig('plt/chprof0.pdf')
-savefig('plt/chprof0.png', dpi=300)
+plt.tight_layout()
+plt.savefig('plt/chprof0.pdf')
+plt.savefig('plt/chprof0.png', dpi=300)
 
-f, (ax) = subplots(1, figsize=[6,2.5])
-im = ax.imshow(chprof, extent=[ndts[0],ndts[-1], -90, 90], aspect='auto')
-cb = colorbar(im, ax=ax, label='CH Coverage')
+f, (ax) = plt.subplots(1, figsize=[6,2.5])
+im = ax.imshow(chprof, extent=[ndts[0],ndts[-1], -90, 90], aspect='auto', cmap='viridis')
+cb = plt.colorbar(im, ax=ax, label='CH Coverage')
 axb = ax.twiny()
 axb.set_xlim(crs[0], crs[-1])
 ax.set_xlabel('Date')
 axb.set_xlabel('Carrington Rotation')
 ax.set_ylabel('Latitude')
 ax.xaxis_date()
-tight_layout()
-savefig('plt/chprof.pdf')
-savefig('plt/chprof.png', dpi=300)
+plt.tight_layout()
+plt.savefig('plt/chprof.pdf')
+plt.savefig('plt/chprof.png', dpi=300)
 
-f, (ax) = subplots(1, figsize=[6,2.5])
+f, (ax) = plt.subplots(1, figsize=[6,2.5])
 im = ax.imshow(improf, extent=[ndts[0],ndts[-1], -90, 90], aspect='auto', cmap=sunpy.visualization.colormaps.cm.sdoaia193)
-cb = colorbar(im, ax=ax, label='Input EUV Data')
+cb = plt.colorbar(im, ax=ax, label='Input EUV Data')
 axb = ax.twiny()
 axb.set_xlim(crs[0], crs[-1])
 ax.set_xlabel('Date')
 axb.set_xlabel('Carrington Rotation')
 ax.set_ylabel('Latitude')
 ax.xaxis_date()
-tight_layout()
-savefig('plt/improf.pdf')
-savefig('plt/improf.png', dpi=300)
+plt.tight_layout()
+plt.savefig('plt/improf.pdf')
+plt.savefig('plt/improf.png', dpi=300)
 
-f, (ax) = subplots(1, figsize=[6,2.5])
+f, (ax) = plt.subplots(1, figsize=[6,2.5])
 im = ax.imshow(sfxprof, extent=[ndts[0],ndts[-1], -90, 90], aspect='auto', cmap='RdBu_r', vmin=-1e20, vmax=1e20)
-cb = colorbar(im, ax=ax, label='CH Signed Flux [Mx]', extend='both')
+cb = plt.colorbar(im, ax=ax, label='CH Signed Flux [Mx]', extend='both')
 axb = ax.twiny()
 axb.set_xlim(crs[0], crs[-1])
 ax.set_xlabel('Date')
 axb.set_xlabel('Carrington Rotation')
 ax.set_ylabel('Latitude')
 ax.xaxis_date()
-tight_layout()
-savefig('plt/sfxprof.pdf')
-savefig('plt/sfxprof.png', dpi=300)
+plt.tight_layout()
+plt.savefig('plt/sfxprof.pdf')
+plt.savefig('plt/sfxprof.png', dpi=300)
 
-f, (ax) = subplots(1, figsize=[6,2.5])
+f, (ax) = plt.subplots(1, figsize=[6,2.5])
 im = ax.imshow(ufxprof, extent=[ndts[0],ndts[-1], -90, 90], aspect='auto', cmap='magma')
-cb = colorbar(im, ax=ax, label='CH Unsigned Flux [Mx]')
+cb = plt.colorbar(im, ax=ax, label='CH Unsigned Flux [Mx]')
 axb = ax.twiny()
 axb.set_xlim(crs[0], crs[-1])
 ax.set_xlabel('Date')
 axb.set_xlabel('Carrington Rotation')
 ax.set_ylabel('Latitude')
 ax.xaxis_date()
-tight_layout()
-savefig('plt/ufxprof.pdf')
-savefig('plt/ufxprof.png', dpi=300)
+plt.tight_layout()
+plt.savefig('plt/ufxprof.pdf')
+plt.savefig('plt/ufxprof.png', dpi=300)
 
-f, (ax) = subplots(1, figsize=[6,2.5])
+f, (ax) = plt.subplots(1, figsize=[6,2.5])
 ax.plot(dts, ufxprof[:,:].sum(0), 'k', label='Total')
 ax.plot(dts, ufxprof[0:140,:].sum(0), label='SP')
 ax.plot(dts, ufxprof[580:719,:].sum(0), label='NP')
@@ -109,22 +107,6 @@ axb.set_xlim(crs[0], crs[-1])
 ax.set_xlabel('Date')
 axb.set_xlabel('Carrington Rotation')
 ax.set_ylabel('Unsigned CH Magnetic Flux [Mx]')
-tight_layout()
-savefig('plt/flx.pdf')
-savefig('plt/flx.png', dpi=300)
-
-# Load and plot one CR
-#config = configparser.ConfigParser()
-#config.read('config.cfg')
-
-# Specify directory structures from configuration file
-#datdir = config['paths']['datdir']
-#magdir = config['paths']['magdir']
-#outdir = config['paths']['outdir']
-
-#cr = 2190
-
-#fname = outdir + 'chmap/chmap-' + str(cr) + '.fits'
-#[imdat, imhdr] = (sunpy.io.read_file(fname))[0]
-
-# Persistence map plotting
+plt.tight_layout()
+plt.savefig('plt/flx.pdf')
+plt.savefig('plt/flx.png', dpi=300)
