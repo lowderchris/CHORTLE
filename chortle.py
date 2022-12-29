@@ -14,19 +14,23 @@ import datetime
 import os
 
 import astropy.units as u
+import matplotlib.pyplot as plt
 import numpy as np
+
 import scipy.ndimage
 import scipy.signal
 import scipy.stats
-import sunpy.io
+
+import sunpy.coordinates
+import sunpy.image
+import sunpy.io.fits
 import sunpy.map
 import sunpy.visualization.colormaps
+
 from astropy.coordinates import SkyCoord
 from astropy.wcs import WCS
 from reproject import reproject_interp
 from sunpy.net import Fido, attrs as a
-
-import matplotlib.pyplot as plt
 
 
 def chortle(cr, plot=False):
@@ -378,7 +382,7 @@ def chortle(cr, plot=False):
 
     chmap = chmap1
 
-    # For visualization, scale the images to created a merged view
+    # For visualization, scale the images to create a merged view
     im_aia = np.copy(chmap_aia)
     im_sta = np.copy(chmap_sta)
     im_stb = np.copy(chmap_stb)
@@ -406,7 +410,7 @@ def chortle(cr, plot=False):
     fname = outdir + 'chmap/chmap-' + str(cr) + '-chim.fits'
     sunpy.io.write_file(fname, chim, header, overwrite=True)
 
-    if plot == True:
+    if plot:
 
         # Some plotting
         f, (ax) = plt.subplots(1, figsize=[6,3])
@@ -667,7 +671,7 @@ def chortle_eit(cr, plot=False):
 
     chmap = chmap1
 
-    # For visualization, scale the images to created a merged view
+    # For visualization, scale the images to create a merged view
     im_eit = np.copy(chmap_eit)
 
     im_eit = im_eit - np.nanmin(im_eit)
@@ -679,7 +683,7 @@ def chortle_eit(cr, plot=False):
     fname = outdir+'chmap/chmap-'+str(cr)+'-eit.fits'
     sunpy.io.write_file(fname, chmap*chim, header, overwrite=True)
 
-    if plot == True:
+    if plot:
 
         # Some plotting
         f, (ax) = plt.subplots(1, figsize=[6,3])
