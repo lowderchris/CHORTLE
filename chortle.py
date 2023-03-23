@@ -32,6 +32,15 @@ from astropy.wcs import WCS
 from reproject import reproject_interp
 from sunpy.net import Fido, attrs as a
 
+import sunpy
+import sunpy.io
+import sunpy.coordinates
+import datetime
+from sunpy.net import Fido, attrs as a
+import drms
+import os
+import glob
+
 
 def chortle(cr, plot=False):
 
@@ -423,6 +432,37 @@ def chortle(cr, plot=False):
         plt.savefig(outdir+'plt/plt-chmap-'+str(cr)+'.pdf')
         plt.savefig(outdir+'plt/plt-chmap-'+str(cr)+'.png', dpi=150)
         plt.close('all')
+
+
+def grab_data():
+
+    # Specify any directories
+    hmidat = os.path.expanduser('~/data/hmi.Synoptic_Mr.polfil/')
+
+    # Sort out the last downloaded rotation
+    crfiles = glob.glob(hmidat+'*.fits')
+    crfiles.sort()
+    crlist = [int(i[-19:-15]) for i in crfiles]
+
+    # Specify requested rotations
+    if len(crlist) == 0:
+        cr0 = 2096
+    else:
+        cr0 = max(crlist) + 1
+    cr1 = int(sunpy.coordinates.sun.carrington_rotation_number(t='now'))
+
+    if (cr0 - 1) == cr1:
+        print('what?')
+
+    # Start the client
+    c = drms.Client()
+
+    # Generate a search
+    crots = a.jsoc.PrimeKey('CAR_ROT', str(cr0) + '-' + str(cr1))
+    res = Fido.search(a.jsoc.Series('hmi.Synoptic_Mr_polfil_720s'), crots, a.jsoc.Notify(os.environ["JSOC_EMAIL"]))
+
+    # Once the query is made and trimmed down...
+    download = Fido.fetch(res, path=hmidat+'{file}.fits')
 
 
 def genprof(cr0, cr1):
