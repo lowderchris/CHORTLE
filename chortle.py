@@ -84,11 +84,9 @@ def chortle(cr, plot=False):
         nsday * u.day) & a.Time(t0, t1))
     res_stb = Fido.search(a.Wavelength(19.5 * u.nm), search_stb)
 
-    # Running into some errors with automatically fetching HMI data
-    # Manually download and load for now...
-    # c = drms.Client()
-    # c.pkeys('hmi_synoptic_mr_polfil_720s')
-    # res_hmi = Fido.search(a.jsoc.Series('hmi_synoptic_mr_polfil_720s') & a.jsoc.PrimeKey('crnum', '2193'))
+    search_hmi = Fido.search(a.jsoc.Series('hmi.Synoptic_Mr_polfil_720s'), 
+                             a.jsoc.PrimeKey('CAR_ROT', str(cr)), 
+                             a.jsoc.Notify(os.environ["JSOC_EMAIL"]))
 
     files_aia = Fido.fetch(res_aia, path=datdir + 'aia/')
     files_aia.sort()
@@ -100,6 +98,8 @@ def chortle(cr, plot=False):
     files_stb.sort()
 
     skip_aia = skip_sta = skip_stb = False
+
+    files_hmi = Fido.fetch(search_hmi, path=magdir)
 
     if len(files_aia) == 0:
         skip_aia = True
