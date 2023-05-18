@@ -23,7 +23,6 @@ import scipy.stats
 
 import sunpy.coordinates
 import sunpy.image
-import sunpy.io.fits
 import sunpy.map
 import sunpy.visualization.colormaps
 
@@ -31,9 +30,9 @@ from astropy.coordinates import SkyCoord
 from astropy.wcs import WCS
 from reproject import reproject_interp
 from sunpy.net import Fido, attrs as a
+import astropy.io.fits
 
 import sunpy
-import sunpy.io
 import sunpy.coordinates
 import datetime
 from sunpy.net import Fido, attrs as a
@@ -114,7 +113,9 @@ def chortle(cr, plot=False):
     chmap[:, :] = np.nan
 
     # Grab a synoptic magnetogram
-    br0 = sunpy.io.fits.read(magdir + 'hmi.synoptic_mr_polfil_720s.' + str(cr) + '.Mr_polfil.fits')[1].data
+    with astropy.io.fits.open(magdir + 'hmi.synoptic_mr_polfil_720s.' + str(cr) + '.Mr_polfil.fits') as hdul:
+        br0 = hdul[1].data
+    
     br = sunpy.image.resample.resample(br0, oshape, method='linear')
 
     # Iterate through this data, reprojecting as you go
@@ -524,7 +525,9 @@ def genprof(cr0, cr1):
         fname = outdir + 'chmap/chmap-' + str(cr) + '-chim.fits'
         [imdat, imhdr] = (sunpy.io.read_file(fname))[0]
 
-        br0 = sunpy.io.fits.read(magdir + 'hmi.synoptic_mr_polfil_720s.' + str(cr) + '.Mr_polfil.fits')[1].data
+        with astropy.io.fits.open(magdir + 'hmi.synoptic_mr_polfil_720s.' + str(cr) + '.Mr_polfil.fits') as hdul:
+            br0 = hdul[1].data
+
         br = sunpy.image.resample.resample(br0, oshape, method='linear')
         pscale = 4 * np.pi * 6.957e10 ** 2 / (oshape[0] * oshape[1])
 
@@ -599,7 +602,8 @@ def chortle_eit(cr, plot=False):
     files_eit.sort()
 
     ## Grab a synoptic magnetogram
-    br = sunpy.io.fits.read(magdir + 'synop_Mr_0.polfil.'+str(cr)+'.fits')[0].data
+    with astropy.io.fits.open(magdir + 'mdi.synoptic_mr_polfil_720s.' + str(cr) + '.Mr_polfil.fits') as hdul:
+        br = hdul[0].data
 
     ## Generate some blank storage arrays
     oshape = [720,1440]

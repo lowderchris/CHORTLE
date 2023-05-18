@@ -23,7 +23,8 @@ from chortle import chortle, genprof
 
 crlist = np.arange(2193,2200)
 
-chortle(crlist)
+for cr in crlist:
+    chortle(crlist)
 
 genprof(crlist[0], crlist[-1])
 ```
