@@ -83,9 +83,11 @@ def chortle(cr, plot=False):
         nsday * u.day) & a.Time(t0, t1))
     res_stb = Fido.search(a.Wavelength(19.5 * u.nm), search_stb)
 
-    search_hmi = Fido.search(a.jsoc.Series('hmi.Synoptic_Mr_polfil_720s'), 
-                             a.jsoc.PrimeKey('CAR_ROT', str(cr)), 
-                             a.jsoc.Notify(os.environ["JSOC_EMAIL"]))
+    if not os.path.exists(magdir + 'hmi.synoptic_mr_polfil_720s.' + str(cr) + '.Mr_polfil.fits'):
+        search_hmi = Fido.search(a.jsoc.Series('hmi.Synoptic_Mr_polfil_720s'), 
+                                a.jsoc.PrimeKey('CAR_ROT', str(cr)), 
+                                a.jsoc.Notify(os.environ["JSOC_EMAIL"]))
+        files_hmi = Fido.fetch(search_hmi, path=magdir)
 
     files_aia = Fido.fetch(res_aia, path=datdir + 'aia/')
     files_aia.sort()
@@ -97,8 +99,6 @@ def chortle(cr, plot=False):
     files_stb.sort()
 
     skip_aia = skip_sta = skip_stb = False
-
-    files_hmi = Fido.fetch(search_hmi, path=magdir)
 
     if len(files_aia) == 0:
         skip_aia = True
@@ -437,11 +437,15 @@ def chortle(cr, plot=False):
 
 def grab_data():
 
-    # Specify any directories
-    hmidat = os.path.expanduser('~/data/hmi.Synoptic_Mr.polfil/')
+    # Read configuration file
+    config = configparser.ConfigParser()
+    config.read('config.cfg')
+
+    # Specify directory structures from configuration file    
+    magdir = config['paths']['magdir']
 
     # Sort out the last downloaded rotation
-    crfiles = glob.glob(hmidat+'*.fits')
+    crfiles = glob.glob(magdir+'*.fits')
     crfiles.sort()
     crlist = [int(i[-19:-15]) for i in crfiles]
 
@@ -463,7 +467,7 @@ def grab_data():
     res = Fido.search(a.jsoc.Series('hmi.Synoptic_Mr_polfil_720s'), crots, a.jsoc.Notify(os.environ["JSOC_EMAIL"]))
 
     # Once the query is made and trimmed down...
-    download = Fido.fetch(res, path=hmidat+'{file}.fits')
+    download = Fido.fetch(res, path=magdir+'{file}.fits')
 
 
 def genprof(cr0, cr1):
@@ -572,7 +576,7 @@ def chortle_eit(cr, plot=False):
 
     # Specify directory structures from configuration file
     datdir = config['paths']['datdir']
-    magdir = config['paths']['magdir']
+    magdir_mdi = config['paths']['magdir_mdi']
     outdir = config['paths']['outdir']
 
     # Specify timing parameters
@@ -602,7 +606,7 @@ def chortle_eit(cr, plot=False):
     files_eit.sort()
 
     ## Grab a synoptic magnetogram
-    with astropy.io.fits.open(magdir + 'mdi.synoptic_mr_polfil_720s.' + str(cr) + '.Mr_polfil.fits') as hdul:
+    with astropy.io.fits.open(magdir_mdi + 'mdi.synoptic_mr_polfil_720s.' + str(cr) + '.Mr_polfil.fits') as hdul:
         br = hdul[0].data
 
     ## Generate some blank storage arrays

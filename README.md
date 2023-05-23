@@ -21,10 +21,10 @@ A previous incarnation of this code, GACHD ([Lowder et al. 2014](http://adsabs.h
 import numpy as np
 from chortle import chortle, genprof
 
-crlist = np.arange(2193,2200)
+crlist = np.arange(2193,2269)
 
 for cr in crlist:
-    chortle(crlist)
+    chortle(cr)
 
 genprof(crlist[0], crlist[-1])
 ```
