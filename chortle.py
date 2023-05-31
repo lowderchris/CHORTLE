@@ -256,6 +256,9 @@ def chortle(cr, plot=False):
 
     pscale = [oshape[0] / 180, oshape[1] / 360]
 
+    # Note that separate instrument thresholding routines are processed below
+    # Future work will consoldiate these where possible into a single function call, once disentangled
+
     # Generate threshold values for AIA
     qs = np.nanmedian(chmap_aia)
     if np.isfinite(qs):
@@ -424,14 +427,14 @@ def chortle(cr, plot=False):
 
         # Some plotting
         f, (ax) = plt.subplots(1, figsize=[6,3])
-        ax.imshow(chim, extent=[0,360,-90,90], cmap=sunpy.visualization.colormaps.cm.sdoaia193, vmin=0, vmax=0.25)
+        ax.imshow(im_aia, extent=[0,360,-90,90], cmap=sunpy.visualization.colormaps.cm.sdoaia193, vmin=0, vmax=0.25)
         ax.contour(lons, lats, chmap, colors='teal',linewidths=0.5)
         ax.set_xlabel('Longitude (degrees)')
         ax.set_ylabel('Latitude (degrees)')
         ax.set_title('CH - AIA/EUVI - CR '+str(cr))
         plt.tight_layout()
-        plt.savefig(outdir+'plt/plt-chmap-'+str(cr)+'.pdf')
-        plt.savefig(outdir+'plt/plt-chmap-'+str(cr)+'.png', dpi=150)
+        plt.savefig(outdir + 'plt/plt-chmap-'+str(cr)+'.pdf')
+        plt.savefig(outdir + 'plt/plt-chmap-'+str(cr)+'.png', dpi=150)
         plt.close('all')
 
 

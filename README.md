@@ -8,14 +8,18 @@ Manifesting as regions of decreased emission in extreme ultraviolet (EUV) and x-
 
 A previous incarnation of this code, GACHD ([Lowder et al. 2014](http://adsabs.harvard.edu/abs/2014ApJ...783..142L), [Lowder et al. 2017](http://adsabs.harvard.edu/abs/2017SoPh..292...18L)), was developed and tested. This is a rewritten and revamped version of this code, written to utilize Python and SunPy.
 
-## Goal
+## Goals
 - Automated and adaptive coronal hole detection
 - Input from multiple data sources, including SOHO/EIT, SDO/AIA, and STEREO/EUVI A&B
-- Simple input - provide a CR number, and chortle will do the rest!
+- Simple input - provide a CR number, and CHORTLE will do the rest!
 - Merging and bridging these datasets to cover solar cycles 23 and 24
 - Tracking of coronal hole features to provide statistics on lifetimes and evolution
 
 ## Usage
+
+Begin by modifying [config.cfg](config.cfg) to specify data and output directories.
+
+Next, to run CHORTLE on a set of Carrington rotations:
 
 ```python
 import numpy as np
@@ -29,5 +33,4 @@ for cr in crlist:
 genprof(crlist[0], crlist[-1])
 ```
 
-## Notes
-
+Once processing has been completed, selected time-latitude coronal hole profiles can be plotted with the included [plt-chprof.py](plt-chprof.py) script.
